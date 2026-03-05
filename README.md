@@ -41,6 +41,8 @@
         - when it hits the automatic invalidation time
             * By default (`prefetch={null}` from `Link`): Static Routes - 5 minutes / Dyanamic Routes - Not Cached
             * `prefetch = {true}` or `router.prefetch`: Static and Dynamic Routes - 5 minutes
+    - But do take note, for a static route, since the page is built during ***build time*** (npm run build), even after client's router cache is cleared, it is still going to fetch the same thing from server's Full Route Cache.
+    
 
 - Well, 5 minutes seem like a long time. What if we want the changes from the server to be reflected as soon as possible?
     - Here are some API provided by NextJS, allowing us to do so:
@@ -58,3 +60,7 @@
 <div><img src='/images/rendering-strategies.jpg'/></div>
 
 - The best way to identify which strategy that the NextJS has decided for each route is to build the page `npm run build` or `next build`
+
+
+### Development Mode
+- In development mode, there's no client side Route Cache. Everything is from the Full Route Cache.

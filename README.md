@@ -55,6 +55,7 @@
     * Static Site Generation (SSG)
     * Incremental Site Regeneration (ISR)
     * Server Side Rendering (SSR)
+    * [Extra] Client Side Rendering (CSR) -> pretty much like a typical render component that makes use of hooks - useState....
 
 - These strategies are usually decided by NextJS depending on certain keywords that encounter in the script. However, the user is given the options to override it too based on the following options.
 <div><img src='/images/rendering-strategies.jpg'/></div>

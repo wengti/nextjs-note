@@ -13,6 +13,10 @@
 - ***For each request*** incoming from the users / client, all `GET` request that has the same URL will be called only once.
 - To reduce the need of multiple duplicated fetch.
 
+- However, when accessing certain API that doesnt use `fetch` (i.e. supabase), 
+    - `cache` can be used for request memoization.
+    - READ MORE: https://nextjs.org/docs/app/guides/caching#react-cache-function
+
 ### Data Cache
 - After a data is fetched, it will be saved in the data cache by default.
 

@@ -429,9 +429,9 @@
 * Video Explanation: https://youtu.be/FTiwIVxWC00
 
 1. First, lets talk about the general use case of Intercepting Route with the following illustration.
-    <div>
-        <img src='/images/intercepting-modal.jpg' width='50%' />
-        <img src='/images/intercepting-images.jpg'  witdh='50%' />
+    <div align='center'>
+        <img src='/images/intercepting-modal.jpg' width='49%' />
+        <img src='/images/intercepting-images.jpg'  width='49%' />
     </div>
 
     - The idea behind is that when accessing the same URL

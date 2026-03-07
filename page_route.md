@@ -282,6 +282,8 @@
     
     - Caveat / Things to remember when using `redirect`
         - Internally, `redirect` works by first throwing an error. Therefore, it should not be used within the `try` block of a `try/catch` statement because the internally thrown error may be caught by the `catch` statement.
+    
+    - `redirect` is also used in the backend. For instance, it can be setup so that when the user tries to access an old endpoint, it is redirected to a new endpoint.
 
 
 ## `template.tsx`

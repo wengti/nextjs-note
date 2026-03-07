@@ -69,3 +69,8 @@
 
 ### Development Mode
 - In development mode, there's no client side Route Cache. Everything is from the Full Route Cache.
+
+### Relevancy to Router Handlers (`route.ts`)
+- All the above discussion is still applicable to it
+- But if a cache mechanism is setup in it such as `export const dynamic='force-static' `, only the `GET()` get cached
+- Also if your `GET()` involves dynamic functions like `headers()` or `cookies`, this cache wont be applied.

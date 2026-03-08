@@ -54,6 +54,11 @@ Here is a text summary of the content provided in this video onwards: https://ww
 
 - This has effectively solved Problem 1 to 3.
 
+- Specifically, this becomes one of the adopted rendering strategies in NextJS, known as `streaming`, aside from `Static Rendering` and `Dynamic Rendering`
+    - It can either be implemented as a `Suspense` Wrapper over the entire `page.tsx` in the form of `loading.tsx`
+    - Or it can also be implemented as a `Suspense` Wrapper over a specific component within `page.tsx` and `layout.tsx`
+    - READ MORE: https://nextjs.org/learn/dashboard-app/streaming
+
 - There are still a problem though.
     - This architecture still end up downloading the entire codebase, which can eventually become heavy.
     - which raises a question: Do we really need to download eveything from the server or just those that are needed?
@@ -92,3 +97,135 @@ Here is a text summary of the content provided in this video onwards: https://ww
 
 ## Prefetching
 - A technique that preloads routes in the background as their link becomes visible
+
+
+## `generateStaticParams`
+
+* READ MORE: https://nextjs.org/docs/app/api-reference/functions/generate-static-params
+
+1. In the following setup,
+    ```text
+    /app
+        - /products
+            - /[id]
+                - page.tsx
+            - page.tsx
+    ```
+    - The route `/products/[id]` is always rendered dynamically, which is fair given that the route needs to know what `id` is it
+
+2. `generateStaticParams` allow us to pre-render a few of this variation in advance as following:
+    ```ts
+
+    type PrdouctPagePropsType = {
+        params: Promise<{
+            id: string
+        }>
+    }
+
+    export async function generateStaticParams(){
+        return [
+            {id: '1'},
+            {id: '2'},
+            {id: '3'}
+        ]
+    }
+
+    export default function ProductPage({ params }:ProductPagePropsType){
+
+        const { id } = await params
+
+        return (
+            <h1>This is Product {id}</h1>
+        )
+    }
+    ```
+    
+    - By doing so, page for Product 1, 2 and 3 are pre-rendered statically.
+    - `generateStaticParams` is expected to return an array of object, where each object contains value for the params
+    - If needed, API fetch can happen within `generateStaticParams` too
+
+3. In fact, `generateStaticParams` has the potential to
+    - make all dynamic route to become static route, given that all the possible values of `params` are known
+    - i.e. using the above example, all `[id]` values are known
+
+4. Because of this potential usage, `dynamicParams` is needed to decide that a page that has `generateStaticParams` will do when a dynamic parameter instead of previously defined static parameters are provided:
+    ```ts
+    // All posts besides the top 10 will be a 404
+    export const dynamicParams = false
+    
+    export async function generateStaticParams() {
+    const posts = await fetch('https://.../posts').then((res) => res.json())
+    const topPosts = posts.slice(0, 10)
+    
+    return topPosts.map((post) => ({
+        slug: post.slug,
+    }))
+    }
+    ```
+
+    - `export const dynamicParams = false` returns 404 pages when a dynamic parameter is provided
+
+    - `export const dynamicParams = true` proceeds to render the page *** STATICALLY *** [DEFAULT with `generateStaticParams()`]
+        - which means now this DYNAMIC ROUTE is RENDERED STATICALLY
+        - when requested, it will be rendered ON DEMAND
+        - stored in both FULL ROUTE CACHE (server) AND ROUTE CACHE (client side)
+
+5. `generateStaticParams` also can make all dynamic route to be statically rendered
+    - With `generateStaticParams` - just returns an empty array
+    - Meanwhile, `export const dynamic = 'force-static' ` can also be used.
+    - These settings mean that those dynamic route will only be rendered *** ON DEMAND *** and *** STATICALLY *** 
+        - rendered on server for the first time when visisted by the user
+        - then stored in FULL ROUTE CACHE (server) and ROUTE CACHE (client)
+
+6. The biggest difference between a *** STATIC ROUTE, RENDERED STATICALLY *** vs *** DYNAMIC ROUTE, RENDERED STATICALLY *** are that:
+    - Static route are rendered and built during *** build time ***
+    - Dynamic route are rendered and built during *** request from the client ***
+    - Once rendered / built, they are in the form of static pages, stored in FULL ROUTE CACHE, waiting to be fetched.
+    - Refer to this video as a proof: https://youtu.be/oEF3dyNgmcs
+
+
+7. Multiple Dynamic Segment in a route
+    - In case where: `app/products/[category]/[product]/page.tsx` - it can `generateStaticParams` for both `[category]` and `[product]`
+    - However, in :  `app/products/[category]/page.tsx` - it can only `generateStaticParams` for `[category]`
+
+    - NextJS provides a specific way that allow the child segment to access the static params generated in the parent:
+        ```ts
+        // Generate segments for [category] - parent
+        export async function generateStaticParams() {
+            const products = await fetch('https://.../products').then((res) => res.json())
+            
+            return products.map((product) => ({
+                category: product.category.slug,
+            }))
+        }
+        
+        export default function Layout({params}: {params: Promise<{ category: string }>}) {
+            // ...
+        }
+        ```
+        
+        - Then, the child dynamic segment can a
+        ```ts
+        // Generate segments for [product] using the `params` passed from
+        // the parent segment's `generateStaticParams` function
+        export async function generateStaticParams({params: { category }}: {params: { category: string }}) {
+            const products = await fetch(
+                `https://.../products?category=${category}`
+            ).then((res) => res.json())
+            
+            return products.map((product) => ({
+                product: product.id,
+            }))
+        }
+        
+        export default function Page({params}: {params: Promise<{ category: string; product: string }>}) {
+            // ...
+        }
+        ```
+
+
+## `server-only` / `client-only` Node Package
+1. With React Server Componenet (RSC) consisting of client component and server component, the boundaries may sometimes blur the line.
+    - To ensuring certain functions are only run on server side (for security reason), a package known as `server-only` can be installed.
+    - If any client component tries to import anything from a file that has `import "server-only"`, an error will be thrown.
+    - Likewise, a package known as `client-only` can be used to exclusively include certain code to be importable in client component only.

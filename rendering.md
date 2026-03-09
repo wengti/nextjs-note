@@ -229,3 +229,12 @@ Here is a text summary of the content provided in this video onwards: https://ww
     - To ensuring certain functions are only run on server side (for security reason), a package known as `server-only` can be installed.
     - If any client component tries to import anything from a file that has `import "server-only"`, an error will be thrown.
     - Likewise, a package known as `client-only` can be used to exclusively include certain code to be importable in client component only.
+
+
+## Client Boundary
+1. In React Server Component (RSC) Architecture, by default, all components are marked as server component.
+    - However, when a component is marked as client component via `'use client'`, all the components imported by this client component will also become 'client component'
+        - unless that imported component is executing certain functions that are server-side only, such as `fs` which requires a file system
+        - then it will remain as a server component, even invoked by a client component, resulting in error thrown
+        - To work around this, it is recommended to pass the server component as `children` prop to the intended client component
+    - Therefore, a component can exist as both server and client component, depending on who is importing it.

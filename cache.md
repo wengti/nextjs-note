@@ -74,3 +74,8 @@
 - All the above discussion is still applicable to it
 - But if a cache mechanism is setup in it such as `export const dynamic='force-static' `, only the `GET()` get cached
 - Also if your `GET()` involves dynamic functions like `headers()` or `cookies`, this cache wont be applied.
+
+
+## Rendering Strategies
+- Philosophically, NextJS always prioritize `Static Rendering` if possible.
+- Only when certain dynamic functions are used or explicitly stated by the users, then it will adopt `Dynamic Rendering`.

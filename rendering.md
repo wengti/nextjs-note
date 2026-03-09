@@ -99,6 +99,8 @@ Here is a text summary of the content provided in this video onwards: https://ww
 - A technique that preloads routes in the background as their link becomes visible
 
 
+
+
 ## `generateStaticParams`
 
 * READ MORE: https://nextjs.org/docs/app/api-reference/functions/generate-static-params

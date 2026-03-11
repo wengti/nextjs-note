@@ -23,12 +23,16 @@
 ### Relationship between Data Cache, Full Route Cache (On Server) and Route Cache (On Client)
 <div><img src='/images/static-and-dynamic-routes.avif'/></div>
 
-- Static Route:
+- Note: The image above may be a bit confusing as it is actually about statically rendered and dynamically rendered router rather than static and dynamic route.
+    - Refer to the end of *rendering.md* note for a further breakdown on their differences.
+
+
+- Statically Rendered Route:
     * The page is built during ***Build Time***
     * Stored in Full Route Cache (On Server)
     * On first request from the user, it fetches that page and store on the client's Route Cache for future navigation.
 
-- Dynamic Route:
+- Dynamically Rendered Route:
     * The page is ***NOT*** built during Build Time.
     * On first request from the user, it skips Full Route Cache (On Server) and proceeds to fetch the necessary data and build that page.
     * The built page is then stored on the client's Route Cache for future navigation.

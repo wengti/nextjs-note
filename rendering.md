@@ -113,7 +113,9 @@ Here is a text summary of the content provided in this video onwards: https://ww
                 - page.tsx
             - page.tsx
     ```
-    - The route `/products/[id]` is always rendered dynamically, which is fair given that the route needs to know what `id` is it
+    - The route `/products/[id]` is not always rendered dynamically
+        - If it does not use any dynamic function, it may be dynamically rendered for the first time but since then stored in the client side's route cache.
+        - It is important to differentiate the concept of `dynamic route` and `dynamic rendering`
 
 2. `generateStaticParams` allow us to pre-render a few of this variation in advance as following:
     ```ts
@@ -240,3 +242,116 @@ Here is a text summary of the content provided in this video onwards: https://ww
         - then it will remain as a server component, even invoked by a client component, resulting in error thrown
         - To work around this, it is recommended to pass the server component as `children` prop to the intended client component
     - Therefore, a component can exist as both server and client component, depending on who is importing it.
+
+
+## Rendering of Static & Dynamic Route
+* Assuming no dynamic function is used:
+1. Static Route
+    - Rendered at build time
+    - Stored in Full Route Cache and Client Route Cache
+
+2. Dynamic Route - defined by having [id] or [...slug]
+    - If params provided via generateStaticParams
+        - rendered at build time
+        - stored in Full Route Cache and Client Route Cache
+
+    - If no generateStaticParams (or generrateStaticParams return empty array / force-static)
+        - rendered on first request
+        - stored in Full Route Cache after first render
+        - stored in Client Route Cache
+
+* Assuming using dynamic functions (cookies, headers, searchParams)
+3. Regardless of what route
+        - rendered on every request
+        - NOT stored in Full Route Cache
+        - ALSO NOT stored in Client Route Cache 
+            - stored for very briefly, 
+            - but with `revalidate: 0` by default, indicating that it is stored for 0s, so basically none.
+
+* P/S
+    - Dynamically rendered routes are not cached in the Full Route Cache, but can still use the Data Cache for data requests.
+
+
+
+
+## Some key takeaways of how rendering works in NextJS
+* Refer to the results from here: https://github.com/wengti/nextjs-playground
+
+1. In `dev` mode
+    - There's no full route cache.
+    - Even statically rendered route, on request, will be rerendered on the server.
+    - So basically, in `dev` mode, it doesnt provide a good actual indicate on how the cache works.
+
+2. `fetch data`
+    - Just because a route fetches data, it does not automatically become dynamically rendered route.
+    - If the fetched data is cached, it will be statically rendered instead.
+
+3. `Dynamically Rendered Route`
+    - When a route consists of dynamic component and does become dynamically rendered, 
+        - does not get stored in full route cache
+        - get stored in client route cache for x amount of seconds, where x is from `revalidate: x` and x is default to 0
+    - Therefore, it can be confirmed that dynamically rendered route does not get stored in any route by default
+
+3. `Layout`
+    - Layout does not get remounted when its child segment changes.
+    - That is why even if it uses dynamic function and supposed to be dynamically rendered, it does not get triggered.
+    - Those dynamic functions only get triggered when its unmounted and remounted once.
+
+4. `Dynamically Rendered Layout`
+    - When a layout becomes dynamically rendered, its children automatically becomes a dynamic route too, although it does not use any dynamic functions.
+    - This will affect all other child route attached to it.
+
+5. `Dynamically Rendered Parent Route`
+    - A parent route can be dynamically rendered, but it doesnt make the child route to also become dynamically rendered.
+    - For instance, /rooms/rooms-number
+        - /rooms can be dynamically rendered, but does not affect /rooms-number to be dynamically rendered
+
+6. `Modal`
+    - Having a dynamically rendered modal placed in the layout makes the layout becomes dynamically rendered.
+    - Therefore, the supposedly statically rendered static children props also becomes dynamically rendered.
+    - `Modal` in `Layout` does not get remounted unless the navigation goes back to the `children` on the same level as that `modal`.
+    - In fact, the `Modal's page.tsx` only got shown when the `children's page.tsx` in the same level is visited
+    - If the user directly navigate to the route that has page.tsx but not on the same level as the modal, the `modal's default.tsx` got shown instead.
+
+7. `Dynamic Route`, such as /room-id/[id]
+    - In its vanilla form, it does not get stored on full route cache and client route cache.
+        - Therefore, it is always rendered on the server when requested just like a typical dynamically rendered route.
+    - with `generateStaticParams`, this route becomes a statically rendered route
+        - those that are specified in the returned array get statically rendered during build time, stored in full route cache
+        - those that are not specified in the returned array get statically rendered on request, then stored in full route cache
+        - if it returns an empty array, then all of them will get statically rendered on request, then stored in full route cache
+
+8. `Prefetch`
+    - It happens when the user comes across a *link* to a statically rendered route
+    - However, if the route consists of dynamic functions, that route will not be prefetched and built in advance. It would only be requested to the server when that link is clicked.
+    - Interestingly, if this *link* is to a dynamic route, where the params is not included in the `generateStaticParams`, a request will immediately be sent to the server to build that route.
+        - Therefore, if that route has any logged response, it will get presented.
+        - This is likely because generateStaticParams basically make the dynamic route to be a static route, with all the route that has the params defined in it being prebuilt during build time
+        - However, for params that are not specified, it still should be a static route, but only built on request
+        - This request happens during the prefetch
+        - Prefetch targeted it because it is treated as a static route
+        - Meanwhile, for truely statically rendered route, since its built during build time, you dont see the log happen since it already happened during build time
+
+9. `Full Route Cache`
+    - It is stored in the memory of the server.
+    - Therefore it will not persist if the server got stopped and restarted.
+    - that is why those static route that are built on request due to `generateStaticParams` need to be regenerated when the user first requests them after the server restarted
+
+10. `cacheComponents: true`
+    - With this feature turned on in `next.config.ts`, a few things are added, which are very subtle.
+        - The build tool becomes more particular about the addition of suspense.
+        - Sources say that now a dynamic route can be controlled at a granular level
+            - elements that are outside suspense which only involve static content will be generated as a static shell
+            - meanwhile, those inside the suspense will only get generated on request
+                - *WARNING*: However, based on my testing, with or without turning on this config, the static shell still run when the user requests for that route
+        - The static shell is now served from a Content Delivery Network, unlike previously which was served from the server directly, which can be slower.
+        - Dynamically Rendered Route are now labelled as Partially Prerender Route, which mostly can be treated as the same
+        - enable the use of function such as `use cache`
+            - where it stores the computed value of a function, component or route in the cache on server end (maybe on the CDN not sure)
+            - which effectively replace `export dynamic = 'force-static`
+        - `generateStaticParams`
+            - can no longer return empty array
+            - must return at least one element in it
+            - only that element that are specified are statically rendered during build time
+            - all other routes are always dynamically rendered and therefore never stored on route cache.
+            - hence forth, the quirky prefetch behaviour that is discussed above also no longer exist.
